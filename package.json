@@ -1,0 +1,41 @@
+{
+  "name": "clawd-plugin-goals",
+  "version": "1.0.0",
+  "description": "Goal tracking plugin for clawdbot with AI-powered insights",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "clawdbot",
+    "plugin",
+    "goals",
+    "habits",
+    "tracking"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@sinclair/typebox": "^0.32.0"
+  },
+  "peerDependencies": {
+    "clawdbot": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dcollado/clawd-plugin-goals.git"
+  }
+}
