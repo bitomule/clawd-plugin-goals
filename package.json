@@ -37,5 +37,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/dcollado/clawd-plugin-goals.git"
+  },
+  "clawdbot": {
+    "extensions": [
+      "dist/index.js"
+    ]
   }
 }
