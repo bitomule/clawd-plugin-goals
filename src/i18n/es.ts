@@ -1,8 +1,11 @@
 export const es = {
   review: {
     registered: "¡Progreso registrado!",
+    dayProgress: "Hoy: {current}/{target} {unit}",
     weekProgress: "Esta semana: {current}/{target} {unit}",
     monthProgress: "Este mes: {current}/{target} {unit}",
+    quarterProgress: "Este trimestre: {current}/{target} {unit}",
+    yearProgress: "Este año: {current}/{target} {unit}",
     streak: "Racha: 🔥 {count} {period}",
     oneMoreToComplete: "¡Uno más y completas la {period}!",
     periodCompleted: "¡{period} COMPLETADO!",
@@ -78,6 +81,10 @@ export const es = {
     weeks: "semanas",
     month: "mes",
     months: "meses",
+    quarter: "trimestre",
+    quarters: "trimestres",
+    year: "año",
+    years: "años",
   },
   history: {
     empty: "Sin historial aún para {goal}",

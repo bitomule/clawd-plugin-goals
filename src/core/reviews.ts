@@ -54,6 +54,28 @@ function formatDate(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
+function getQuarter(date: Date): number {
+  return Math.floor(date.getMonth() / 3) + 1
+}
+
+function getPeriodKey(frequency: string, date: Date): string {
+  const year = date.getFullYear()
+  switch (frequency) {
+    case "daily":
+      return formatDate(date)
+    case "weekly":
+      return formatDate(getWeekStart(date))
+    case "monthly":
+      return `${year}-${String(date.getMonth() + 1).padStart(2, "0")}`
+    case "quarterly":
+      return `${year}-Q${getQuarter(date)}`
+    case "yearly":
+      return `${year}`
+    default:
+      return formatDate(date)
+  }
+}
+
 function calculatePeriodProgress(
   reviews: Review[],
   goal: Goal,
@@ -108,18 +130,7 @@ function calculatePeriodProgress(
   const periodsWithActivity = new Set<string>()
   for (const review of allGoalReviews) {
     const reviewDate = parseLocalDate(review.date)
-    let key: string
-    switch (goal.frequency) {
-      case "weekly":
-        key = formatDate(getWeekStart(reviewDate))
-        break
-      case "monthly":
-        key = `${reviewDate.getFullYear()}-${String(reviewDate.getMonth() + 1).padStart(2, "0")}`
-        break
-      default:
-        key = review.date
-    }
-    periodsWithActivity.add(key)
+    periodsWithActivity.add(getPeriodKey(goal.frequency, reviewDate))
   }
   const streak = periodsWithActivity.size
 
@@ -191,14 +202,25 @@ export async function addReview(
 
   const messages: string[] = [t(locale, "review.registered")]
 
-  const periodKey = goal.frequency === "weekly" ? "week" : goal.frequency === "monthly" ? "month" : "day"
-  messages.push(t(locale, "review.weekProgress", { current, target: goal.target, unit: goal.unit }))
+  const frequencyToPeriod: Record<string, string> = {
+    daily: "day",
+    weekly: "week",
+    monthly: "month",
+    quarterly: "quarter",
+    yearly: "year",
+  }
+  const periodKey = frequencyToPeriod[goal.frequency] || "day"
+
+  const progressKey = `review.${periodKey}Progress`
+  messages.push(t(locale, progressKey, { current, target: goal.target, unit: goal.unit }))
 
   // Show which days were logged this period
   if (uniqueDays.length > 0 && goal.type === "habit") {
+    const localeMap: Record<string, string> = { en: "en-US", es: "es-ES" }
+    const dateLocale = localeMap[locale] || "en-US"
     const dayNames = uniqueDays.map((d) => {
       const date = parseLocalDate(d)
-      return date.toLocaleDateString(locale === "es" ? "es-ES" : "en-US", { weekday: "short", day: "numeric" })
+      return date.toLocaleDateString(dateLocale, { weekday: "short", day: "numeric" })
     })
     messages.push(`📅 ${dayNames.join(", ")}`)
   }
