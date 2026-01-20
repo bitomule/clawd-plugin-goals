@@ -42,7 +42,7 @@ export function createGoalsTool(api: ClawdbotPluginApi): PluginTool {
   return {
     name: "goals",
     description:
-      "Track personal goals with AI-powered insights. Actions: add, list, get, update, delete, log (for habits), review, history, unlock, next, capture_obstacle, insights, coaching, setup_reminders, remove_reminders, set_preference, get_preferences. Use 'log' to record habit completions (e.g., 'went to gym today'). Use 'history' to see past logs for a goal.",
+      "Track personal goals with AI-powered insights. Actions: add, list, get, update, delete, log, review, history, unlock, next, capture_obstacle, insights, coaching, setup_reminders, remove_reminders, set_preference, get_preferences. IMPORTANT: Use 'log' for daily habit completions (e.g., 'went to gym'). Use 'review' only for weekly reflective check-ins with rating/obstacles. Use 'history' to see past logs.",
     parameters: GoalsParams,
     async execute(_id: string, params: unknown): Promise<ToolResult> {
       const p = params as GoalsParamsType

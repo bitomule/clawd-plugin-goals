@@ -62,8 +62,13 @@ goals → action: log
 | "Fui al gym" | `log` |
 | "Hice ejercicio hoy" | `log` |
 | "Ayer entrené" | `log` con date |
-| "¿Cómo voy esta semana?" + reflexión | `review` |
-| Check-in semanal completo | `review` |
+
+**IMPORTANTE: Para hábitos diarios, SIEMPRE usa `log`.**
+
+`review` es para check-ins reflexivos (semanales) donde el usuario quiere:
+- Evaluar su progreso con rating (struggling/slow/on-track/exceeding)
+- Reflexionar sobre obstáculos y victorias
+- NO usar para registrar completaciones diarias de hábitos
 
 ## Crear Objetivos
 
