@@ -207,6 +207,7 @@ export function createGoalsTool(api: ClawdbotPluginApi): PluginTool {
                 rating: p.rating,
                 evidence: p.evidence,
                 value: p.value,
+                date: p.date,
                 obstacles: p.obstacles,
                 wins: p.wins,
               },

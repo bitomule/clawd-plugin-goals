@@ -92,6 +92,7 @@ const ReviewParams = Type.Object({
   rating: ReviewRating,
   evidence: Type.String({ description: "What you did (e.g., 'Went to gym Mon and Wed')" }),
   value: Type.Optional(Type.Number({ description: "For measurable goals: actual value achieved" })),
+  date: Type.Optional(Type.String({ description: "Date in YYYY-MM-DD format (defaults to today)" })),
   obstacles: Type.Optional(Type.Array(Type.String())),
   wins: Type.Optional(Type.Array(Type.String())),
 })
