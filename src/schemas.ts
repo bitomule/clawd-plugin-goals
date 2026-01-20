@@ -79,6 +79,13 @@ const DeleteGoalParams = Type.Object({
   id: Type.String({ description: "Goal ID" }),
 })
 
+const LogParams = Type.Object({
+  action: Type.Literal("log"),
+  goalId: Type.String({ description: "Goal ID" }),
+  note: Type.Optional(Type.String({ description: "What you did (e.g., 'Upper body workout', 'Leg day')" })),
+  date: Type.Optional(Type.String({ description: "Date in YYYY-MM-DD format (defaults to today)" })),
+})
+
 const ReviewParams = Type.Object({
   action: Type.Literal("review"),
   goalId: Type.String({ description: "Goal ID to review" }),
@@ -144,6 +151,7 @@ export const GoalsParams = Type.Union([
   GetGoalParams,
   UpdateGoalParams,
   DeleteGoalParams,
+  LogParams,
   ReviewParams,
   UnlockParams,
   NextParams,
@@ -162,6 +170,7 @@ export type ListGoalsParamsType = Static<typeof ListGoalsParams>
 export type GetGoalParamsType = Static<typeof GetGoalParams>
 export type UpdateGoalParamsType = Static<typeof UpdateGoalParams>
 export type DeleteGoalParamsType = Static<typeof DeleteGoalParams>
+export type LogParamsType = Static<typeof LogParams>
 export type ReviewParamsType = Static<typeof ReviewParams>
 export type SetupRemindersParamsType = Static<typeof SetupRemindersParams>
 export type SetPreferenceParamsType = Static<typeof SetPreferenceParams>

@@ -42,7 +42,7 @@ export function createGoalsTool(api: ClawdbotPluginApi): PluginTool {
   return {
     name: "goals",
     description:
-      "Track personal goals with AI-powered insights. Actions: add, list, get, update, delete, review, unlock, next, capture_obstacle, insights, coaching, setup_reminders, remove_reminders, set_preference, get_preferences",
+      "Track personal goals with AI-powered insights. Actions: add, list, get, update, delete, log (for habits), review, unlock, next, capture_obstacle, insights, coaching, setup_reminders, remove_reminders, set_preference, get_preferences. Use 'log' to record habit completions (e.g., 'went to gym today').",
     parameters: GoalsParams,
     async execute(_id: string, params: unknown): Promise<ToolResult> {
       const p = params as GoalsParamsType
@@ -163,6 +163,37 @@ export function createGoalsTool(api: ClawdbotPluginApi): PluginTool {
           case "delete": {
             const result = await deleteGoal(basePath, userId, p.id, locale)
             return textResult(result.message)
+          }
+
+          case "log": {
+            const goalResult = await getGoal(basePath, userId, p.goalId, locale)
+            if (!goalResult.goal) {
+              return textResult(goalResult.message)
+            }
+
+            const logDate = p.date || new Date().toISOString().split("T")[0]
+            const note = p.note || "Completed"
+
+            const result = await addReview(
+              basePath,
+              userId,
+              {
+                goalId: p.goalId,
+                rating: "on-track",
+                evidence: `${logDate}: ${note}`,
+              },
+              locale
+            )
+
+            const g = goalResult.goal
+            const lines = [
+              `✅ Logged: ${g.title}`,
+              `📅 ${logDate}: ${note}`,
+              "",
+              result.message,
+            ]
+
+            return textResult(lines.join("\n"))
           }
 
           case "review": {
