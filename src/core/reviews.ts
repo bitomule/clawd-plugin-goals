@@ -11,6 +11,7 @@ export interface ReviewInput {
   value?: number
   obstacles?: string[]
   wins?: string[]
+  date?: string // YYYY-MM-DD format, defaults to today
 }
 
 function countConsecutiveSuccesses(reviews: Review[], goalId: string): number {
@@ -29,88 +30,100 @@ function countConsecutiveSuccesses(reviews: Review[], goalId: string): number {
   return count
 }
 
+// Parse date string as local date (not UTC)
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number)
+  return new Date(year, month - 1, day)
+}
+
+// Get ISO week start (Monday) for a date
+function getWeekStart(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day // Monday is 1, Sunday is 0
+  d.setDate(d.getDate() + diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+// Format date as YYYY-MM-DD
+function formatDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 function calculatePeriodProgress(
   reviews: Review[],
   goal: Goal,
-  currentDate: string
-): { current: number; streak: number } {
-  const now = new Date(currentDate)
+  referenceDate: string
+): { current: number; streak: number; uniqueDays: string[] } {
+  const now = parseLocalDate(referenceDate)
   let periodStart: Date
-  let periodKey: string
 
   switch (goal.frequency) {
     case "daily":
       periodStart = new Date(now)
       periodStart.setHours(0, 0, 0, 0)
-      periodKey = currentDate.split("T")[0]
       break
-    case "weekly": {
-      const dayOfWeek = now.getDay()
-      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-      periodStart = new Date(now)
-      periodStart.setDate(now.getDate() - diff)
-      periodStart.setHours(0, 0, 0, 0)
-      periodKey = periodStart.toISOString().split("T")[0]
+    case "weekly":
+      periodStart = getWeekStart(now)
       break
-    }
     case "monthly":
       periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
-      periodKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
       break
     case "quarterly": {
       const quarter = Math.floor(now.getMonth() / 3)
       periodStart = new Date(now.getFullYear(), quarter * 3, 1)
-      periodKey = `${now.getFullYear()}-Q${quarter + 1}`
       break
     }
     case "yearly":
       periodStart = new Date(now.getFullYear(), 0, 1)
-      periodKey = String(now.getFullYear())
       break
     default:
       periodStart = new Date(now)
-      periodKey = currentDate
   }
 
+  // Get all reviews for this goal in the current period
   const periodReviews = reviews.filter((r) => {
-    const reviewDate = new Date(r.date)
-    return r.goalId === goal.id && reviewDate >= periodStart && reviewDate <= now
+    if (r.goalId !== goal.id) return false
+    const reviewDate = parseLocalDate(r.date)
+    return reviewDate >= periodStart && reviewDate <= now
   })
+
+  // For habits, count unique days (not total reviews)
+  const uniqueDays = [...new Set(periodReviews.map((r) => r.date))].sort()
 
   const current =
     goal.type === "measurable"
       ? periodReviews.reduce((sum, r) => sum + (r.value || 0), 0)
-      : periodReviews.length
+      : uniqueDays.length
 
-  const goalReviews = reviews
+  // Calculate streak (consecutive periods with at least one completion)
+  const allGoalReviews = reviews
     .filter((r) => r.goalId === goal.id)
     .sort((a, b) => b.date.localeCompare(a.date))
 
-  let streak = 0
-  const periods = new Set<string>()
-  for (const review of goalReviews) {
-    const reviewDate = new Date(review.date)
+  const periodsWithActivity = new Set<string>()
+  for (const review of allGoalReviews) {
+    const reviewDate = parseLocalDate(review.date)
     let key: string
     switch (goal.frequency) {
-      case "weekly": {
-        const dayOfWeek = reviewDate.getDay()
-        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-        const weekStart = new Date(reviewDate)
-        weekStart.setDate(reviewDate.getDate() - diff)
-        key = weekStart.toISOString().split("T")[0]
+      case "weekly":
+        key = formatDate(getWeekStart(reviewDate))
         break
-      }
       case "monthly":
         key = `${reviewDate.getFullYear()}-${String(reviewDate.getMonth() + 1).padStart(2, "0")}`
         break
       default:
-        key = review.date.split("T")[0]
+        key = review.date
     }
-    periods.add(key)
+    periodsWithActivity.add(key)
   }
-  streak = periods.size
+  const streak = periodsWithActivity.size
 
-  return { current, streak }
+  return { current, streak, uniqueDays }
 }
 
 export async function addReview(
@@ -131,12 +144,13 @@ export async function addReview(
   }
 
   const now = new Date().toISOString()
-  const today = now.split("T")[0]
+  const today = formatDate(new Date())
+  const reviewDate = input.date || today
 
   const review: Review = {
     id: randomUUID(),
     goalId: input.goalId,
-    date: today,
+    date: reviewDate,
     rating: input.rating,
     evidence: input.evidence,
     value: input.value,
@@ -146,20 +160,24 @@ export async function addReview(
 
   reviewsData.reviews.push(review)
 
-  goal.lastReview = today
+  goal.lastReview = reviewDate
   goal.nextCheckIn = calculateNextCheckInFromRating(today, input.rating, goal.maturity)
   goal.updatedAt = now
-
-  if (goal.type === "measurable" && input.value !== undefined) {
-    goal.progress = input.value
-  }
 
   const consecutiveSuccesses = countConsecutiveSuccesses(reviewsData.reviews, goal.id)
   const newMaturity = calculateMaturityIncrease(goal.maturity, consecutiveSuccesses)
   const maturityIncreased = newMaturity > goal.maturity
   goal.maturity = newMaturity
 
-  const { current, streak } = calculatePeriodProgress(reviewsData.reviews, goal, now)
+  // Calculate progress using today as reference (to see current week/month status)
+  const { current, streak, uniqueDays } = calculatePeriodProgress(reviewsData.reviews, goal, today)
+
+  // Update goal progress for habits (count of completions this period)
+  if (goal.type === "habit") {
+    goal.progress = current
+  } else if (goal.type === "measurable" && input.value !== undefined) {
+    goal.progress = input.value
+  }
 
   await writeReviews(basePath, userId, reviewsData)
   await writeGoals(basePath, userId, goalsData)
@@ -168,13 +186,22 @@ export async function addReview(
     ts: now,
     action: "review",
     goalId: goal.id,
-    data: { rating: input.rating, value: input.value },
+    data: { rating: input.rating, value: input.value, date: reviewDate },
   })
 
   const messages: string[] = [t(locale, "review.registered")]
 
   const periodKey = goal.frequency === "weekly" ? "week" : goal.frequency === "monthly" ? "month" : "day"
   messages.push(t(locale, "review.weekProgress", { current, target: goal.target, unit: goal.unit }))
+
+  // Show which days were logged this period
+  if (uniqueDays.length > 0 && goal.type === "habit") {
+    const dayNames = uniqueDays.map((d) => {
+      const date = parseLocalDate(d)
+      return date.toLocaleDateString(locale === "es" ? "es-ES" : "en-US", { weekday: "short", day: "numeric" })
+    })
+    messages.push(`📅 ${dayNames.join(", ")}`)
+  }
 
   if (streak > 1) {
     const periodName = t(locale, `period.${periodKey}s`)

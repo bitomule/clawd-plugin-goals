@@ -29,6 +29,7 @@ Sistema de tracking basado en **Atomic Habits** de James Clear, con IA para dete
 | `next` | Siguiente objetivo | ¿Qué necesita atención? |
 | `coaching` | Consejo IA | Usuario necesita motivación |
 | `insights` | Ver patrones | ¿Qué patrones hay? |
+| `history` | Ver historial | Ver logs pasados de un objetivo |
 
 ## Registrar Progreso de Hábitos (¡IMPORTANTE!)
 
@@ -162,6 +163,8 @@ Usa `insights` para ver patrones y `coaching` para consejos.
 | "¿Qué toca hoy?" | `next` |
 | "Necesito motivación" | `coaching` |
 | "Añade objetivo X" | `add` |
+| "¿Qué días fui al gym?" | `history` |
+| "Historial de ejercicio" | `history` |
 
 ## Notas Técnicas
 

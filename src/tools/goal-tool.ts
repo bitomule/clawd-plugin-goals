@@ -8,7 +8,7 @@ import type {
 } from "../types.js"
 import { GoalsParams, type GoalsParamsType } from "../schemas.js"
 import { addGoal, getGoal, listGoals, updateGoal, deleteGoal, getNextGoalNeedingAttention } from "../core/goals.js"
-import { addReview } from "../core/reviews.js"
+import { addReview, getReviewHistory } from "../core/reviews.js"
 import { unlockReadyGoals } from "../core/unlock.js"
 import { readPreferences, writePreferences, readObstacles, writeObstacles, appendSessionLog } from "../storage/file-io.js"
 import { readPatterns } from "../storage/file-io.js"
@@ -42,7 +42,7 @@ export function createGoalsTool(api: ClawdbotPluginApi): PluginTool {
   return {
     name: "goals",
     description:
-      "Track personal goals with AI-powered insights. Actions: add, list, get, update, delete, log (for habits), review, unlock, next, capture_obstacle, insights, coaching, setup_reminders, remove_reminders, set_preference, get_preferences. Use 'log' to record habit completions (e.g., 'went to gym today').",
+      "Track personal goals with AI-powered insights. Actions: add, list, get, update, delete, log (for habits), review, history, unlock, next, capture_obstacle, insights, coaching, setup_reminders, remove_reminders, set_preference, get_preferences. Use 'log' to record habit completions (e.g., 'went to gym today'). Use 'history' to see past logs for a goal.",
     parameters: GoalsParams,
     async execute(_id: string, params: unknown): Promise<ToolResult> {
       const p = params as GoalsParamsType
@@ -171,7 +171,8 @@ export function createGoalsTool(api: ClawdbotPluginApi): PluginTool {
               return textResult(goalResult.message)
             }
 
-            const logDate = p.date || new Date().toISOString().split("T")[0]
+            const today = new Date()
+            const logDate = p.date || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
             const note = p.note || "Completed"
 
             const result = await addReview(
@@ -180,7 +181,8 @@ export function createGoalsTool(api: ClawdbotPluginApi): PluginTool {
               {
                 goalId: p.goalId,
                 rating: "on-track",
-                evidence: `${logDate}: ${note}`,
+                evidence: note,
+                date: logDate,
               },
               locale
             )
@@ -211,6 +213,33 @@ export function createGoalsTool(api: ClawdbotPluginApi): PluginTool {
               locale
             )
             return textResult(result.message)
+          }
+
+          case "history": {
+            const goalResult = await getGoal(basePath, userId, p.goalId, locale)
+            if (!goalResult.goal) {
+              return textResult(goalResult.message)
+            }
+
+            const reviews = await getReviewHistory(basePath, userId, p.goalId, p.limit || 10)
+
+            if (reviews.length === 0) {
+              return textResult(t(locale, "history.empty", { goal: goalResult.goal.title }))
+            }
+
+            const lines = [t(locale, "history.header", { goal: goalResult.goal.title, count: reviews.length }), ""]
+
+            for (const review of reviews) {
+              const rating = t(locale, `rating.${review.rating}`)
+              lines.push(`📅 ${review.date} — ${rating}`)
+              lines.push(`   ${review.evidence}`)
+              if (review.value !== undefined) {
+                lines.push(`   Value: ${review.value}`)
+              }
+              lines.push("")
+            }
+
+            return textResult(lines.join("\n"))
           }
 
           case "unlock": {

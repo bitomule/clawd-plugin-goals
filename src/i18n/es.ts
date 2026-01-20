@@ -79,4 +79,8 @@ export const es = {
     month: "mes",
     months: "meses",
   },
+  history: {
+    empty: "Sin historial aún para {goal}",
+    header: "Historial de {goal} ({count} entradas):",
+  },
 }

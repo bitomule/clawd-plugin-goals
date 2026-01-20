@@ -110,6 +110,12 @@ const CaptureObstacleParams = Type.Object({
   description: Type.String(),
 })
 
+const HistoryParams = Type.Object({
+  action: Type.Literal("history"),
+  goalId: Type.String({ description: "Goal ID to see history for" }),
+  limit: Type.Optional(Type.Number({ description: "Number of entries to show (default: 10)" })),
+})
+
 const InsightsParams = Type.Object({
   action: Type.Literal("insights"),
 })
@@ -153,6 +159,7 @@ export const GoalsParams = Type.Union([
   DeleteGoalParams,
   LogParams,
   ReviewParams,
+  HistoryParams,
   UnlockParams,
   NextParams,
   CaptureObstacleParams,
