@@ -81,17 +81,6 @@ export interface GoalsConfig {
   defaultLocale: Locale
 }
 
-export interface ClawdbotPluginToolContext {
-  agentAccountId?: string
-  messageChannel?: string
-  sessionKey?: string
-}
-
-export interface ClawdbotPluginApi {
-  pluginConfig: unknown
-  callGatewayMethod: (method: string, params: unknown) => Promise<unknown>
-}
-
 export interface GoalsData {
   goals: Goal[]
   lastUpdated: string
@@ -119,4 +108,39 @@ export interface Obstacle {
 export interface ObstaclesData {
   obstacles: Obstacle[]
   lastUpdated: string
+}
+
+// Clawdbot Plugin Types
+export type ClawdbotPluginApi = {
+  id: string
+  name: string
+  config: Record<string, unknown>
+  pluginConfig?: Record<string, unknown>
+  logger: {
+    info: (...args: unknown[]) => void
+    warn: (...args: unknown[]) => void
+    error: (...args: unknown[]) => void
+    debug: (...args: unknown[]) => void
+  }
+  registerTool: (tool: PluginTool, opts?: { optional?: boolean }) => void
+  resolvePath: (input: string) => string
+}
+
+export type PluginTool = {
+  name: string
+  description: string
+  parameters: unknown
+  execute: (id: string, params: unknown) => Promise<ToolResult>
+}
+
+export type ToolResult = {
+  content: Array<{ type: "text"; text: string }>
+}
+
+export type ClawdbotPluginDefinition = {
+  id: string
+  name: string
+  description?: string
+  configSchema?: unknown
+  register: (api: ClawdbotPluginApi) => void
 }
